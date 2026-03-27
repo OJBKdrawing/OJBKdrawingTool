@@ -121,17 +121,12 @@
             galleryElement.innerHTML = '';
             
             try {
-                // 仅显示活跃状态的画作
-                let q = query(
+                // 修改查询逻辑：移除复杂的 where 过滤，避免需要手动创建复合索引
+                // 仅使用简单的排序
+                const q = query(
                     collection(db, "drawings"), 
-                    where("status", "==", "active"),
                     orderBy("createdAt", "desc")
                 );
-
-                // 管理员能看到所有的
-                if (isAdmin) {
-                   q = query(collection(db, "drawings"), orderBy("createdAt", "desc"));
-                }
 
                 const querySnapshot = await getDocs(q);
                 loadingElement.style.display = 'none';
@@ -147,6 +142,9 @@
                     const docId = docSnap.id;
                     const date = data.createdAt ? data.createdAt.toDate().toLocaleString() : "Recently shared";
                     
+                    // 在客户端进行状态过滤
+                    if (!isAdmin && data.status !== 'active') return;
+
                     const card = document.createElement('div');
                     card.className = 'drawing-card';
                     card.innerHTML = `
@@ -162,7 +160,7 @@
                 });
             } catch (error) {
                 console.error("Error loading gallery:", error);
-                loadingElement.innerText = "Error loading artworks.";
+                loadingElement.innerText = "Error loading artworks. Please check console.";
             }
         }
 

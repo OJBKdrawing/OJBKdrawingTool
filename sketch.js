@@ -13,40 +13,50 @@ let pg; // 离屏缓冲区，用于保存纯净的画作
 function setup() {
   pixelDensity(1); 
   
-  // 响应式画布大小：取窗口宽高中的较小值，最大不超过 787
-  let size = min(windowWidth * 0.95, windowHeight * 0.7, 787);
-  let canvas = createCanvas(size, size);
+  // 适配手机长画幅和电脑大尺寸
+  let canvasWidth, canvasHeight;
+  if (windowWidth > 600) {
+    // 电脑端：取窗口宽高的 90%，最大 1200
+    canvasWidth = min(windowWidth * 0.9, 1200);
+    canvasHeight = min(windowHeight * 0.8, 800);
+  } else {
+    // 手机端：适配长画幅
+    canvasWidth = windowWidth * 0.95;
+    canvasHeight = windowHeight * 0.8;
+  }
+  
+  let canvas = createCanvas(canvasWidth, canvasHeight);
   canvas.parent('main');
   
-  // 创建离屏缓冲区，保持固定比例
-  pg = createGraphics(size, size);
+  // 创建离屏缓冲区，保持和画布一致
+  pg = createGraphics(canvasWidth, canvasHeight);
   pg.background(0);
   
   textFont('Arial');
-  textSize(size * 0.025); // 文字大小随画布缩放
+  textSize(min(canvasWidth, canvasHeight) * 0.025);
 
-  // 绑定分享按钮点击事件
   let shareBtn = document.getElementById('shareButton');
   if (shareBtn) {
     shareBtn.onclick = uploadToGallery;
   }
 }
 
-// 适配窗口缩放
 function windowResized() {
-  let size = min(windowWidth * 0.95, windowHeight * 0.7, 787);
-  resizeCanvas(size, size);
-  // 注意：pg 不随之缩放，以保护已画内容，或者根据需要处理 pg 缩放
+  let canvasWidth, canvasHeight;
+  if (windowWidth > 600) {
+    canvasWidth = min(windowWidth * 0.9, 1200);
+    canvasHeight = min(windowHeight * 0.8, 800);
+  } else {
+    canvasWidth = windowWidth * 0.95;
+    canvasHeight = windowHeight * 0.8;
+  }
+  resizeCanvas(canvasWidth, canvasHeight);
 }
 
 function draw() {
-  // 1. 先把底层画板的内容“印”到主画布上
   image(pg, 0, 0, width, height);
-  
-  // 2. 然后在主画布上画出说明文字
   instructionText();
 
-  // 检查是否有按键被持续按下 (仅 PC 端有效)
   if (keyIsPressed) {
     if (key === 'z') {
       pg.stroke(255);
@@ -65,34 +75,32 @@ function draw() {
   }
 }
 
-// 移动端触摸开始 (对应 mouseClicked)
+// 移除原来的 mouseClicked 自动连线逻辑，统一使用 mouseDragged 自由画
+function mouseDragged() {
+  if (!keyIsPressed) {
+    pg.stroke(255);
+    pg.line(pmouseX, pmouseY, mouseX, mouseY);
+  }
+}
+
+// 手机端触摸开始：仅记录位置或画点，不画直线
 function touchStarted() {
   if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
     if (!keyIsPressed) {
       pg.stroke(255);
-      if (clickCount % 2 === 0) {
-        lastDotX = mouseX;
-        lastDotY = mouseY;
-        pg.point(lastDotX, lastDotY);
-        clickCount++;
-      } else {
-        pg.line(lastDotX, lastDotY, mouseX, mouseY);
-        clickCount++;
-      }
+      pg.point(mouseX, mouseY);
     }
-    // 防止手机浏览器默认滚动
     return false;
   }
 }
 
-// 移动端触摸拖动 (对应 mouseDragged)
+// 手机端触摸拖动：自由画
 function touchMoved() {
   if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
     if (!keyIsPressed) {
-        pg.stroke(255);
-        pg.line(pmouseX, pmouseY, mouseX, mouseY);
+      pg.stroke(255);
+      pg.line(pmouseX, pmouseY, mouseX, mouseY);
     }
-    // 防止手机浏览器默认滚动
     return false;
   }
 }
@@ -133,18 +141,12 @@ function keyReleased() {
 }
 
 function mouseClicked() {
-  if (!keyIsPressed) {
-    pg.stroke(255);
-    if (clickCount % 2 === 0) {
-      lastDotX = mouseX;
-      lastDotY = mouseY;
-      pg.point(lastDotX, lastDotY);
-      clickCount++;
-    } else {
-      pg.line(lastDotX, lastDotY, mouseX, mouseY);
-      clickCount++;
-    }
-  }
+  // 移除原来的自动连线逻辑，这里留空或根据需要处理
+  // 如果需要恢复点击画点功能：
+  // if (!keyIsPressed) {
+  //   pg.stroke(255);
+  //   pg.point(mouseX, mouseY);
+  // }
 }
 
 function mouseDragged() {

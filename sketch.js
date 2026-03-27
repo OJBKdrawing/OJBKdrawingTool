@@ -204,9 +204,9 @@ async function uploadToGallery() {
     }
 }
 
-// 油漆桶功能 (Flood Fill) 的 JavaScript 高性能实现
+// 油漆桶功能 (Flood Fill) 的 JavaScript 高性能实现 - 扫描线优化版
 function floodFill(canvasX, canvasY, fillColor) {
-  // 将主画布坐标映射到离屏缓冲区 pg 的像素坐标
+  // 1. 坐标映射
   let startX = Math.floor(map(canvasX, 0, width, 0, pg.width));
   let startY = Math.floor(map(canvasY, 0, height, 0, pg.height));
   
@@ -217,7 +217,7 @@ function floodFill(canvasX, canvasY, fillColor) {
   const targetR = red(fillColor);
   const targetG = green(fillColor);
   const targetB = blue(fillColor);
-  const targetA = alpha(fillColor);
+  const targetA = 255;
 
   const startPos = (startY * pg.width + startX) * 4;
   const startR = pg.pixels[startPos];
@@ -225,38 +225,71 @@ function floodFill(canvasX, canvasY, fillColor) {
   const startB = pg.pixels[startPos + 2];
   const startA = pg.pixels[startPos + 3];
 
+  // 如果目标颜色和起始颜色相同，直接退出防止死循环
   if (startR === targetR && startG === targetG && startB === targetB && startA === targetA) {
     return;
   }
 
   const stack = [[startX, startY]];
   
-  pg.pixels[startPos] = targetR;
-  pg.pixels[startPos+1] = targetG;
-  pg.pixels[startPos+2] = targetB;
-  pg.pixels[startPos+3] = targetA;
-  
   while (stack.length > 0) {
-    const [x, y] = stack.pop();
-    const neighbors = [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]];
+    let [x, y] = stack.pop();
+    let pos = (y * pg.width + x) * 4;
 
-    for (const [nx, ny] of neighbors) {
-      if (nx >= 0 && nx < pg.width && ny >= 0 && ny < pg.height) {
-        const nPos = (ny * pg.width + nx) * 4;
-        if (pg.pixels[nPos] === startR && 
-            pg.pixels[nPos+1] === startG && 
-            pg.pixels[nPos+2] === startB && 
-            pg.pixels[nPos+3] === startA) {
-          
-          pg.pixels[nPos] = targetR;
-          pg.pixels[nPos+1] = targetG;
-          pg.pixels[nPos+2] = targetB;
-          pg.pixels[nPos+3] = targetA;
-          
-          stack.push([nx, ny]);
+    // 向上扫描
+    while (y >= 0 && matchColor(pos, startR, startG, startB, startA)) {
+      y--;
+      pos -= pg.width * 4;
+    }
+    
+    y++;
+    pos += pg.width * 4;
+    
+    let reachLeft = false;
+    let reachRight = false;
+    
+    while (y < pg.height && matchColor(pos, startR, startG, startB, startA)) {
+      // 填充当前像素
+      pg.pixels[pos] = targetR;
+      pg.pixels[pos + 1] = targetG;
+      pg.pixels[pos + 2] = targetB;
+      pg.pixels[pos + 3] = targetA;
+      
+      // 检查左侧
+      if (x > 0) {
+        if (matchColor(pos - 4, startR, startG, startB, startA)) {
+          if (!reachLeft) {
+            stack.push([x - 1, y]);
+            reachLeft = true;
+          }
+        } else if (reachLeft) {
+          reachLeft = false;
         }
       }
+      
+      // 检查右侧
+      if (x < pg.width - 1) {
+        if (matchColor(pos + 4, startR, startG, startB, startA)) {
+          if (!reachRight) {
+            stack.push([x + 1, y]);
+            reachRight = true;
+          }
+        } else if (reachRight) {
+          reachRight = false;
+        }
+      }
+      
+      y++;
+      pos += pg.width * 4;
     }
   }
   pg.updatePixels();
+}
+
+// 辅助函数：快速颜色匹配
+function matchColor(pos, r, g, b, a) {
+  return pg.pixels[pos] === r && 
+         pg.pixels[pos+1] === g && 
+         pg.pixels[pos+2] === b && 
+         pg.pixels[pos+3] === a;
 }

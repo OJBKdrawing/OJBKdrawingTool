@@ -36,28 +36,54 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            position: relative;
         }
         .drawing-card img {
             width: 100%;
             height: auto;
             border: 1px solid #ddd;
             border-radius: 4px;
-            background-color: black; /* 对应我们画板的背景色 */
+            background-color: black;
         }
         .drawing-info {
             margin-top: 10px;
             font-size: 12px;
             color: #666;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+        .btn {
+            padding: 5px 10px;
+            font-size: 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+        .delete-btn { background-color: #dc3545; color: white; display: none; }
+        .admin-mode .delete-btn { display: inline-block; }
+        .btn:hover { opacity: 0.8; }
         #loading {
             margin-top: 50px;
             font-size: 18px;
             color: #666;
         }
+        #admin-info {
+            display: none;
+            background: #333;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
     <h1>Community Gallery</h1>
+    <div id="admin-info">ADMIN MODE ACTIVE</div>
     <a href="index.html" class="back-link">← Back to Drawing Board</a>
 
     <div id="loading">Loading artworks...</div>
@@ -66,9 +92,8 @@
     <!-- Firebase SDK (模块化 CDN 方式) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-        import { getFirestore, collection, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+        import { getFirestore, collection, query, orderBy, getDocs, where, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
-        // 你的 Firebase 配置信息
         const firebaseConfig = {
             apiKey: "AIzaSyAXoCirYLEY-hR-5NGzwFGas7FYN_6g4e8",
             authDomain: "ojbkdrawingtool.firebaseapp.com",
@@ -82,15 +107,33 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // 检查是否为管理员模式 (通过 URL 参数 ?admin=1234)
+        const urlParams = new URLSearchParams(window.location.search);
+        const isAdmin = urlParams.get('admin') === '1234'; 
+        if (isAdmin) {
+            document.body.classList.add('admin-mode');
+            document.getElementById('admin-info').style.display = 'block';
+        }
+
         async function loadGallery() {
             const galleryElement = document.getElementById('gallery');
             const loadingElement = document.getElementById('loading');
+            galleryElement.innerHTML = '';
             
             try {
-                // 从 Firestore 获取数据，按时间倒序排列
-                const q = query(collection(db, "drawings"), orderBy("createdAt", "desc"));
+                // 仅显示活跃状态的画作
+                let q = query(
+                    collection(db, "drawings"), 
+                    where("status", "==", "active"),
+                    orderBy("createdAt", "desc")
+                );
+
+                // 管理员能看到所有的
+                if (isAdmin) {
+                   q = query(collection(db, "drawings"), orderBy("createdAt", "desc"));
+                }
+
                 const querySnapshot = await getDocs(q);
-                
                 loadingElement.style.display = 'none';
                 
                 if (querySnapshot.empty) {
@@ -99,26 +142,39 @@
                     return;
                 }
 
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const docId = docSnap.id;
                     const date = data.createdAt ? data.createdAt.toDate().toLocaleString() : "Recently shared";
                     
                     const card = document.createElement('div');
                     card.className = 'drawing-card';
-                    
-                    // 注意：这里我们读取的是 imageData (Base64)
                     card.innerHTML = `
                         <img src="${data.imageData}" alt="Drawing">
-                        <div class="drawing-info">Shared on: ${date}</div>
+                        <div class="drawing-info">
+                            <span>${date}</span>
+                            <div>
+                                <button class="btn delete-btn" onclick="window.deleteDrawing('${docId}')">Delete</button>
+                            </div>
+                        </div>
                     `;
-                    
                     galleryElement.appendChild(card);
                 });
             } catch (error) {
                 console.error("Error loading gallery:", error);
-                loadingElement.innerText = "Failed to load gallery. Make sure Firestore is set to Test Mode.";
+                loadingElement.innerText = "Error loading artworks.";
             }
         }
+
+        // 管理员删除功能
+        window.deleteDrawing = async (docId) => {
+            if (confirm("ADMIN: Permanent delete this drawing?")) {
+                const docRef = doc(db, "drawings", docId);
+                await deleteDoc(docRef);
+                alert("Deleted.");
+                loadGallery();
+            }
+        };
 
         loadGallery();
     </script>

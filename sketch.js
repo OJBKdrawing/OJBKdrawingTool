@@ -12,15 +12,18 @@ let pg; // 离屏缓冲区，用于保存纯净的画作
 
 function setup() {
   pixelDensity(1); 
-  let canvas = createCanvas(787, 787);
+  
+  // 响应式画布大小：取窗口宽高中的较小值，最大不超过 787
+  let size = min(windowWidth * 0.95, windowHeight * 0.7, 787);
+  let canvas = createCanvas(size, size);
   canvas.parent('main');
   
-  // 创建离屏缓冲区
-  pg = createGraphics(787, 787);
+  // 创建离屏缓冲区，保持固定比例
+  pg = createGraphics(size, size);
   pg.background(0);
   
   textFont('Arial');
-  textSize(20);
+  textSize(size * 0.025); // 文字大小随画布缩放
 
   // 绑定分享按钮点击事件
   let shareBtn = document.getElementById('shareButton');
@@ -29,14 +32,21 @@ function setup() {
   }
 }
 
+// 适配窗口缩放
+function windowResized() {
+  let size = min(windowWidth * 0.95, windowHeight * 0.7, 787);
+  resizeCanvas(size, size);
+  // 注意：pg 不随之缩放，以保护已画内容，或者根据需要处理 pg 缩放
+}
+
 function draw() {
   // 1. 先把底层画板的内容“印”到主画布上
-  image(pg, 0, 0);
+  image(pg, 0, 0, width, height);
   
-  // 2. 然后在主画布上画出说明文字（不会被保存到画作里）
+  // 2. 然后在主画布上画出说明文字
   instructionText();
 
-  // 检查是否有按键被持续按下
+  // 检查是否有按键被持续按下 (仅 PC 端有效)
   if (keyIsPressed) {
     if (key === 'z') {
       pg.stroke(255);
@@ -50,8 +60,40 @@ function draw() {
     } else if (key === 'e') {
       pg.fill(0);
       pg.noStroke();
-      pg.circle(mouseX, mouseY, 10); // 橡皮擦大小缩小一倍 (20 -> 10)
+      pg.circle(mouseX, mouseY, 10);
     }
+  }
+}
+
+// 移动端触摸开始 (对应 mouseClicked)
+function touchStarted() {
+  if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
+    if (!keyIsPressed) {
+      pg.stroke(255);
+      if (clickCount % 2 === 0) {
+        lastDotX = mouseX;
+        lastDotY = mouseY;
+        pg.point(lastDotX, lastDotY);
+        clickCount++;
+      } else {
+        pg.line(lastDotX, lastDotY, mouseX, mouseY);
+        clickCount++;
+      }
+    }
+    // 防止手机浏览器默认滚动
+    return false;
+  }
+}
+
+// 移动端触摸拖动 (对应 mouseDragged)
+function touchMoved() {
+  if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
+    if (!keyIsPressed) {
+        pg.stroke(255);
+        pg.line(pmouseX, pmouseY, mouseX, mouseY);
+    }
+    // 防止手机浏览器默认滚动
+    return false;
   }
 }
 
@@ -113,13 +155,22 @@ function mouseDragged() {
 }
 
 function instructionText() {
+  // 仅在 PC 端显示按键说明，手机端显示简略说明
   fill(255);
   noStroke();
-  text("Drag Mouse OR 'z' to free-draw", 10, 25);
-  text("'a' to draw straight lines", 10, 45);
-  text("'c' to reset straight lines", 10, 65);
-  text("'e' to erase / 'x' for dotted line", 10, 85);
-  text("'o'/'p' to fill white/black", 10, 105);
+  let size = width;
+  textSize(size * 0.03); 
+  
+  if (windowWidth > 600) {
+    text("Drag Mouse OR 'z' to free-draw", 10, size * 0.04);
+    text("'a' to draw straight lines", 10, size * 0.07);
+    text("'c' to reset straight lines", 10, size * 0.10);
+    text("'e' to erase / 'x' for dotted line", 10, size * 0.13);
+    text("'o'/'p' to fill white/black", 10, size * 0.16);
+  } else {
+    text("Touch to draw / drag to free-draw", 10, size * 0.05);
+    text("OJBK Drawing Tool - Mobile", 10, size * 0.10);
+  }
 }
 
 // --- Firebase 上传逻辑 (Firestore Base64 方式) ---
@@ -144,7 +195,9 @@ async function uploadToGallery() {
         // 3. 直接保存 Base64 字符串到 Firestore
         await window.firebaseRefs.addDoc(window.firebaseRefs.collection(window.firebaseDB, "drawings"), {
             imageData: dataUrl, // 直接存字符串
-            createdAt: window.firebaseRefs.serverTimestamp()
+            createdAt: window.firebaseRefs.serverTimestamp(),
+            reportCount: 0,      // 初始化举报次数为 0
+            status: 'active'    // 初始化状态为活跃
         });
         
         alert("Shared to Gallery successfully! (Stored in Database)");
@@ -213,4 +266,3 @@ function floodFill(startX, startY, fillColor) {
   }
   pg.updatePixels();
 }
-// update username

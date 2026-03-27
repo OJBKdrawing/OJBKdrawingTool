@@ -31,6 +31,7 @@ function setup() {
   canvas.parent('main');
   
   pg = createGraphics(canvasWidth, canvasHeight);
+  pg.pixelDensity(1); // 非常重要：确保缓冲区像素密度也为 1
   pg.background(0);
   
   textFont('Arial');
@@ -143,19 +144,7 @@ function keyReleased() {
 }
 
 function mouseClicked() {
-  // 移除原来的自动连线逻辑，这里留空或根据需要处理
-  // 如果需要恢复点击画点功能：
-  // if (!keyIsPressed) {
-  //   pg.stroke(255);
-  //   pg.point(mouseX, mouseY);
-  // }
-}
-
-function mouseDragged() {
-    if (!keyIsPressed) {
-        pg.stroke(255);
-        pg.line(pmouseX, pmouseY, mouseX, mouseY);
-    }
+  // 移除原来的自动连线逻辑
 }
 
 function instructionText() {
@@ -216,9 +205,10 @@ async function uploadToGallery() {
 }
 
 // 油漆桶功能 (Flood Fill) 的 JavaScript 高性能实现
-function floodFill(startX, startY, fillColor) {
-  startX = Math.floor(startX);
-  startY = Math.floor(startY);
+function floodFill(canvasX, canvasY, fillColor) {
+  // 将主画布坐标映射到离屏缓冲区 pg 的像素坐标
+  let startX = Math.floor(map(canvasX, 0, width, 0, pg.width));
+  let startY = Math.floor(map(canvasY, 0, height, 0, pg.height));
   
   if (startX < 0 || startX >= pg.width || startY < 0 || startY >= pg.height) return;
 

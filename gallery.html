@@ -87,12 +87,12 @@
     <a href="index.html" class="back-link">← Back to Drawing Board</a>
 
     <div id="loading">Loading artworks...</div>
-    <div class="gallery-container" id="gallery"></div>
+    <div id="gallery" class="gallery-container"></div>
 
-    <!-- Firebase SDK (模块化 CDN 方式) -->
+    <!-- 简化 Firebase SDK 引用，使用兼容性更好的版本 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-        import { getFirestore, collection, query, orderBy, getDocs, where, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+        import { getFirestore, collection, query, orderBy, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAXoCirYLEY-hR-5NGzwFGas7FYN_6g4e8",
@@ -107,7 +107,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 检查是否为管理员模式 (通过 URL 参数 ?admin=1234)
+        // 管理员模式检查
         const urlParams = new URLSearchParams(window.location.search);
         const isAdmin = urlParams.get('admin') === '1234'; 
         if (isAdmin) {
@@ -118,17 +118,12 @@
         async function loadGallery() {
             const galleryElement = document.getElementById('gallery');
             const loadingElement = document.getElementById('loading');
-            galleryElement.innerHTML = '';
             
             try {
-                // 修改查询逻辑：移除复杂的 where 过滤，避免需要手动创建复合索引
-                // 仅使用简单的排序
-                const q = query(
-                    collection(db, "drawings"), 
-                    orderBy("createdAt", "desc")
-                );
-
+                // 使用最基础的查询，不带 where 过滤，避免任何索引问题
+                const q = query(collection(db, "drawings"), orderBy("createdAt", "desc"));
                 const querySnapshot = await getDocs(q);
+                
                 loadingElement.style.display = 'none';
                 
                 if (querySnapshot.empty) {
@@ -142,8 +137,8 @@
                     const docId = docSnap.id;
                     const date = data.createdAt ? data.createdAt.toDate().toLocaleString() : "Recently shared";
                     
-                    // 在客户端进行状态过滤
-                    if (!isAdmin && data.status !== 'active') return;
+                    // 在客户端过滤掉非 active 的内容（如果将来需要隐藏功能）
+                    if (!isAdmin && data.status && data.status !== 'active') return;
 
                     const card = document.createElement('div');
                     card.className = 'drawing-card';
@@ -151,26 +146,23 @@
                         <img src="${data.imageData}" alt="Drawing">
                         <div class="drawing-info">
                             <span>${date}</span>
-                            <div>
-                                <button class="btn delete-btn" onclick="window.deleteDrawing('${docId}')">Delete</button>
-                            </div>
+                            <button class="btn delete-btn" onclick="window.deleteDrawing('${docId}')">Delete</button>
                         </div>
                     `;
                     galleryElement.appendChild(card);
                 });
             } catch (error) {
-                console.error("Error loading gallery:", error);
-                loadingElement.innerText = "Error loading artworks. Please check console.";
+                console.error("Gallery Error:", error);
+                loadingElement.innerText = "Error: " + error.message;
             }
         }
 
-        // 管理员删除功能
         window.deleteDrawing = async (docId) => {
-            if (confirm("ADMIN: Permanent delete this drawing?")) {
-                const docRef = doc(db, "drawings", docId);
-                await deleteDoc(docRef);
-                alert("Deleted.");
-                loadGallery();
+            if (confirm("ADMIN: Permanent delete?")) {
+                try {
+                    await deleteDoc(doc(db, "drawings", docId));
+                    location.reload();
+                } catch (e) { alert("Delete failed: " + e.message); }
             }
         };
 

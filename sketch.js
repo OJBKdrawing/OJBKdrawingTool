@@ -13,12 +13,13 @@ let pg; // 离屏缓冲区，用于保存纯净的画作
 function setup() {
   pixelDensity(1); 
   
-  // 适配手机长画幅和电脑大尺寸
+  // 电脑端保持正方形，手机端适配长画幅
   let canvasWidth, canvasHeight;
   if (windowWidth > 600) {
-    // 电脑端：取窗口宽高的 90%，最大 1200
-    canvasWidth = min(windowWidth * 0.9, 1200);
-    canvasHeight = min(windowHeight * 0.8, 800);
+    // 电脑端：正方形，取宽高较小值的 90%，最大 900
+    let size = min(windowWidth * 0.9, windowHeight * 0.8, 900);
+    canvasWidth = size;
+    canvasHeight = size;
   } else {
     // 手机端：适配长画幅
     canvasWidth = windowWidth * 0.95;
@@ -44,8 +45,9 @@ function setup() {
 function windowResized() {
   let canvasWidth, canvasHeight;
   if (windowWidth > 600) {
-    canvasWidth = min(windowWidth * 0.9, 1200);
-    canvasHeight = min(windowHeight * 0.8, 800);
+    let size = min(windowWidth * 0.9, windowHeight * 0.8, 900);
+    canvasWidth = size;
+    canvasHeight = size;
   } else {
     canvasWidth = windowWidth * 0.95;
     canvasHeight = windowHeight * 0.8;

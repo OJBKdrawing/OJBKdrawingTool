@@ -1,0 +1,48 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #f0f0f0;
+  font-family: Arial, sans-serif;
+}
+
+canvas {
+  display: block;
+  border: 2px solid #333;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+#controls {
+  margin-bottom: 15px;
+  display: flex;
+  gap: 15px;
+}
+
+button, #galleryLink {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #333;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+
+button:hover, #galleryLink:hover {
+  background-color: #555;
+}
+
+#shareButton {
+  background-color: #007bff;
+}
+
+#shareButton:hover {
+  background-color: #0056b3;
+}

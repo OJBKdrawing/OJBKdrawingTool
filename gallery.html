@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing Gallery</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 { color: #333; }
+        .back-link {
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #007bff;
+            font-weight: bold;
+        }
+        .gallery-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+        .drawing-card {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .drawing-card img {
+            width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: black; /* 对应我们画板的背景色 */
+        }
+        .drawing-info {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+        #loading {
+            margin-top: 50px;
+            font-size: 18px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Community Gallery</h1>
+    <a href="index.html" class="back-link">← Back to Drawing Board</a>
+
+    <div id="loading">Loading artworks...</div>
+    <div class="gallery-container" id="gallery"></div>
+
+    <!-- Firebase SDK (模块化 CDN 方式) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+        import { getFirestore, collection, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+
+        // 你的 Firebase 配置信息
+        const firebaseConfig = {
+            apiKey: "AIzaSyAXoCirYLEY-hR-5NGzwFGas7FYN_6g4e8",
+            authDomain: "ojbkdrawingtool.firebaseapp.com",
+            projectId: "ojbkdrawingtool",
+            storageBucket: "ojbkdrawingtool.firebasestorage.app",
+            messagingSenderId: "629287348964",
+            appId: "1:629287348964:web:97e9c481c0b26a0eecdaf1",
+            measurementId: "G-XR62TPE8EK"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function loadGallery() {
+            const galleryElement = document.getElementById('gallery');
+            const loadingElement = document.getElementById('loading');
+            
+            try {
+                // 从 Firestore 获取数据，按时间倒序排列
+                const q = query(collection(db, "drawings"), orderBy("createdAt", "desc"));
+                const querySnapshot = await getDocs(q);
+                
+                loadingElement.style.display = 'none';
+                
+                if (querySnapshot.empty) {
+                    loadingElement.innerText = "No drawings found. Be the first to share!";
+                    loadingElement.style.display = 'block';
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const date = data.createdAt ? data.createdAt.toDate().toLocaleString() : "Recently shared";
+                    
+                    const card = document.createElement('div');
+                    card.className = 'drawing-card';
+                    
+                    // 注意：这里我们读取的是 imageData (Base64)
+                    card.innerHTML = `
+                        <img src="${data.imageData}" alt="Drawing">
+                        <div class="drawing-info">Shared on: ${date}</div>
+                    `;
+                    
+                    galleryElement.appendChild(card);
+                });
+            } catch (error) {
+                console.error("Error loading gallery:", error);
+                loadingElement.innerText = "Failed to load gallery. Make sure Firestore is set to Test Mode.";
+            }
+        }
+
+        loadGallery();
+    </script>
+</body>
+</html>

@@ -31,7 +31,6 @@ function setup() {
   canvas.parent('main');
   
   pg = createGraphics(canvasWidth, canvasHeight);
-  pg.pixelDensity(1); // 非常重要：确保缓冲区像素密度也为 1
   pg.background(0);
   
   textFont('Arial');
@@ -204,9 +203,10 @@ async function uploadToGallery() {
     }
 }
 
-// 油漆桶功能 (Flood Fill) 的 JavaScript 高性能实现 - 扫描线优化版
+// 油漆桶功能 (Flood Fill) 的 JavaScript 高性能实现
 function floodFill(canvasX, canvasY, fillColor) {
-  // 1. 坐标映射
+  // 1. 坐标映射：必须考虑像素密度
+  let d = pixelDensity();
   let startX = Math.floor(map(canvasX, 0, width, 0, pg.width));
   let startY = Math.floor(map(canvasY, 0, height, 0, pg.height));
   
@@ -219,13 +219,13 @@ function floodFill(canvasX, canvasY, fillColor) {
   const targetB = blue(fillColor);
   const targetA = 255;
 
-  const startPos = (startY * pg.width + startX) * 4;
+  // 获取点击位置的颜色（考虑像素密度）
+  const startPos = (startY * d * pg.width * d + startX * d) * 4;
   const startR = pg.pixels[startPos];
   const startG = pg.pixels[startPos + 1];
   const startB = pg.pixels[startPos + 2];
   const startA = pg.pixels[startPos + 3];
 
-  // 如果目标颜色和起始颜色相同，直接退出防止死循环
   if (startR === targetR && startG === targetG && startB === targetB && startA === targetA) {
     return;
   }
@@ -233,60 +233,38 @@ function floodFill(canvasX, canvasY, fillColor) {
   const stack = [[startX, startY]];
   
   while (stack.length > 0) {
-    let [x, y] = stack.pop();
-    let pos = (y * pg.width + x) * 4;
+    const [x, y] = stack.pop();
+    
+    // 检查四个方向
+    const neighbors = [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]];
 
-    // 向上扫描
-    while (y >= 0 && matchColor(pos, startR, startG, startB, startA)) {
-      y--;
-      pos -= pg.width * 4;
-    }
-    
-    y++;
-    pos += pg.width * 4;
-    
-    let reachLeft = false;
-    let reachRight = false;
-    
-    while (y < pg.height && matchColor(pos, startR, startG, startB, startA)) {
-      // 填充当前像素
-      pg.pixels[pos] = targetR;
-      pg.pixels[pos + 1] = targetG;
-      pg.pixels[pos + 2] = targetB;
-      pg.pixels[pos + 3] = targetA;
-      
-      // 检查左侧
-      if (x > 0) {
-        if (matchColor(pos - 4, startR, startG, startB, startA)) {
-          if (!reachLeft) {
-            stack.push([x - 1, y]);
-            reachLeft = true;
+    for (const [nx, ny] of neighbors) {
+      if (nx >= 0 && nx < pg.width && ny >= 0 && ny < pg.height) {
+        // 计算像素数组中的位置（处理像素密度 d）
+        for (let i = 0; i < d; i++) {
+          for (let j = 0; j < d; j++) {
+            let index = 4 * ((ny * d + j) * pg.width * d + (nx * d + i));
+            if (pg.pixels[index] === startR && 
+                pg.pixels[index+1] === startG && 
+                pg.pixels[index+2] === startB && 
+                pg.pixels[index+3] === startA) {
+              
+              pg.pixels[index] = targetR;
+              pg.pixels[index+1] = targetG;
+              pg.pixels[index+2] = targetB;
+              pg.pixels[index+3] = targetA;
+              
+              // 每一组像素块只需入栈一次
+              if (i === 0 && j === 0) stack.push([nx, ny]);
+            }
           }
-        } else if (reachLeft) {
-          reachLeft = false;
         }
       }
-      
-      // 检查右侧
-      if (x < pg.width - 1) {
-        if (matchColor(pos + 4, startR, startG, startB, startA)) {
-          if (!reachRight) {
-            stack.push([x + 1, y]);
-            reachRight = true;
-          }
-        } else if (reachRight) {
-          reachRight = false;
-        }
-      }
-      
-      y++;
-      pos += pg.width * 4;
     }
   }
   pg.updatePixels();
 }
 
-// 辅助函数：快速颜色匹配
 function matchColor(pos, r, g, b, a) {
   return pg.pixels[pos] === r && 
          pg.pixels[pos+1] === g && 

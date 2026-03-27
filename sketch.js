@@ -13,23 +13,23 @@ let pg; // 离屏缓冲区，用于保存纯净的画作
 function setup() {
   pixelDensity(1); 
   
-  // 电脑端保持正方形，手机端适配长画幅
   let canvasWidth, canvasHeight;
-  if (windowWidth > 600) {
-    // 电脑端：正方形，取宽高较小值的 90%，最大 900
-    let size = min(windowWidth * 0.9, windowHeight * 0.8, 900);
+  // 更加直接的判断：如果是横屏（电脑端），强制正方形
+  if (windowWidth > windowHeight) {
+    let size = min(windowWidth * 0.8, windowHeight * 0.8, 900);
     canvasWidth = size;
     canvasHeight = size;
+    console.log("Desktop Mode: Square Canvas", canvasWidth, "x", canvasHeight);
   } else {
     // 手机端：适配长画幅
     canvasWidth = windowWidth * 0.95;
     canvasHeight = windowHeight * 0.8;
+    console.log("Mobile Mode: Long Canvas", canvasWidth, "x", canvasHeight);
   }
   
   let canvas = createCanvas(canvasWidth, canvasHeight);
   canvas.parent('main');
   
-  // 创建离屏缓冲区，保持和画布一致
   pg = createGraphics(canvasWidth, canvasHeight);
   pg.background(0);
   
@@ -44,8 +44,8 @@ function setup() {
 
 function windowResized() {
   let canvasWidth, canvasHeight;
-  if (windowWidth > 600) {
-    let size = min(windowWidth * 0.9, windowHeight * 0.8, 900);
+  if (windowWidth > windowHeight) {
+    let size = min(windowWidth * 0.8, windowHeight * 0.8, 900);
     canvasWidth = size;
     canvasHeight = size;
   } else {

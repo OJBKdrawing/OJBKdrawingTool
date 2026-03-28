@@ -23,10 +23,25 @@
         }
         .gallery-container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
             width: 100%;
             max-width: 1200px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        @media (max-width: 600px) {
+            .gallery-container {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 10px;
+                padding: 5px;
+            }
+            .drawing-card {
+                padding: 5px;
+            }
+            .drawing-info {
+                font-size: 10px;
+            }
         }
         .drawing-card {
             background: white;
@@ -36,6 +51,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            position: relative;
+            overflow: hidden; /* 防止内容溢出 */
         }
         .drawing-card img {
             width: 100%;
@@ -125,9 +142,17 @@
             const loadingElement = document.getElementById('loading');
             const errorElement = document.getElementById('error-log');
             
+            console.log("Starting gallery load...");
+            
             try {
+                // 如果是在手机上，可能因为网络较慢或内存限制
+                // 增加延迟确保 Firebase 已经完全加载
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
                 const q = query(collection(db, "drawings"), orderBy("createdAt", "desc"));
                 const querySnapshot = await getDocs(q);
+                
+                console.log("Gallery query snapshot size:", querySnapshot.size);
                 
                 loadingElement.style.display = 'none';
                 
@@ -142,6 +167,7 @@
                     const docId = docSnap.id;
                     const date = data.createdAt ? data.createdAt.toDate().toLocaleString() : "最近分享 / Recently shared";
                     
+                    // 更加鲁棒的过滤逻辑：如果 status 字段不存在，默认视为 active
                     if (!isAdmin && data.status && data.status !== 'active') return;
 
                     const card = document.createElement('div');
@@ -156,9 +182,9 @@
                     galleryElement.appendChild(card);
                 });
             } catch (error) {
-                console.error("Gallery Error:", error);
+                console.error("Detailed Gallery Error:", error);
                 loadingElement.innerText = "加载失败。 / Failed to load.";
-                errorElement.innerText = "错误详情 / Error: " + error.message;
+                errorElement.innerText = "错误详情 / Error: " + error.message + "\n(请确认是否已在 Firebase 控制台开启测试模式)";
                 errorElement.style.display = 'block';
             }
         }

@@ -129,10 +129,6 @@ function keyPressed() {
     // 保存本地
     pg.saveCanvas(`OJBKDrawing_${year()}${month()}${day()}${hour()}${minute()}${saveCount}`, 'png');
     saveCount++;
-  } else if (key === 'o') {
-    floodFill(mouseX, mouseY, color(255));
-  } else if (key === 'p') {
-    floodFill(mouseX, mouseY, color(0));
   }
 }
 
@@ -147,127 +143,78 @@ function mouseClicked() {
 }
 
 function instructionText() {
-  // 仅在 PC 端显示按键说明，手机端显示简略说明
   fill(255);
   noStroke();
   let size = width;
-  textSize(size * 0.03); 
+  let tSize = size * 0.025; // 稍微调小一点字体，贴合感更好
+  textSize(tSize); 
   
   if (windowWidth > 600) {
-    text("Drag Mouse OR 'z' to free-draw", 10, size * 0.04);
-    text("'a' to draw straight lines", 10, size * 0.07);
-    text("'c' to reset straight lines", 10, size * 0.10);
-    text("'e' to erase / 'x' for dotted line", 10, size * 0.13);
-    text("'o'/'p' to fill white/black", 10, size * 0.16);
+    // 电脑端说明文字
+    let x = 5; // 贴合左边缘
+    text("Drag Mouse OR 'z' to free-draw", x, tSize * 1.2);
+    text("'a' to draw straight lines", x, tSize * 2.4);
+    text("'c' to reset straight lines", x, tSize * 3.6);
+    text("'e' to erase / 'x' for dotted line", x, tSize * 4.8);
+
+    // 鼠标悬停检测逻辑 (检测是否在说明文字区域内)
+    if (mouseX > 0 && mouseX < 250 && mouseY > 0 && mouseY < tSize * 6) {
+      // 绘制半透明黑色背景框
+      fill(0, 0, 0, 180);
+      rect(mouseX + 15, mouseY, 220, 110, 5);
+      
+      // 绘制中文版说明
+      fill(255);
+      textSize(14);
+      text("拖动鼠标或按'z'：自由绘画", mouseX + 25, mouseY + 25);
+      text("按'a'：绘制连续直线", mouseX + 25, mouseY + 45);
+      text("按'c'：重置直线起点", mouseX + 25, mouseY + 65);
+      text("按'e'：橡皮擦 / 按'x'：虚线", mouseX + 25, mouseY + 85);
+    }
   } else {
-    text("Touch to draw / drag to free-draw", 10, size * 0.05);
-    text("OJBK Drawing Tool - Mobile", 10, size * 0.10);
+    // 手机端简略说明
+    textSize(size * 0.04);
+    text("Touch to draw / drag to free-draw", 10, size * 0.06);
+    text("OJBK Drawing Tool - Mobile", 10, size * 0.12);
   }
 }
 
 // --- Firebase 上传逻辑 (Firestore Base64 方式) ---
 async function uploadToGallery() {
     const shareBtn = document.getElementById('shareButton');
-    shareBtn.innerText = "Uploading...";
+    const originalText = "分享到画廊 / Share to Gallery";
+    shareBtn.innerText = "上传中... / Uploading...";
     shareBtn.disabled = true;
 
     try {
         // 1. 将 pg 内容转换为 Base64 字符串
-        // 使用较小的质量压缩以确保不超出 Firestore 的 1MB 限制
         const dataUrl = pg.canvas.toDataURL('image/png');
         
         // 2. 检查大小 (1MB = 1,048,576 bytes)
         if (dataUrl.length > 1048576) {
-            alert("Drawing is too complex to share for free! Try erasing some parts.");
-            shareBtn.innerText = "Share to Gallery";
+            alert("画作太复杂，无法免费分享！请尝试擦除部分内容。\nDrawing is too complex to share for free!");
+            shareBtn.innerText = originalText;
             shareBtn.disabled = false;
             return;
         }
 
         // 3. 直接保存 Base64 字符串到 Firestore
         await window.firebaseRefs.addDoc(window.firebaseRefs.collection(window.firebaseDB, "drawings"), {
-            imageData: dataUrl, // 直接存字符串
+            imageData: dataUrl, 
             createdAt: window.firebaseRefs.serverTimestamp(),
-            reportCount: 0,      // 初始化举报次数为 0
-            status: 'active'    // 初始化状态为活跃
+            reportCount: 0,      
+            status: 'active'    
         });
         
-        alert("Shared to Gallery successfully! (Stored in Database)");
-        shareBtn.innerText = "Share to Gallery";
+        alert("分享成功！(已存入数据库)\nShared to Gallery successfully!");
+        shareBtn.innerText = originalText;
         shareBtn.disabled = false;
     } catch (error) {
         console.error("Upload failed:", error);
-        alert("Upload failed. Make sure Firestore is enabled in Test Mode.");
-        shareBtn.innerText = "Share to Gallery";
+        alert("上传失败，请检查网络或控制台。\nUpload failed. Check console for details.");
+        shareBtn.innerText = originalText;
         shareBtn.disabled = false;
     }
 }
 
-// 油漆桶功能 (Flood Fill) 的 JavaScript 高性能实现
-function floodFill(canvasX, canvasY, fillColor) {
-  // 1. 坐标映射：必须考虑像素密度
-  let d = pixelDensity();
-  let startX = Math.floor(map(canvasX, 0, width, 0, pg.width));
-  let startY = Math.floor(map(canvasY, 0, height, 0, pg.height));
-  
-  if (startX < 0 || startX >= pg.width || startY < 0 || startY >= pg.height) return;
 
-  pg.loadPixels();
-  
-  const targetR = red(fillColor);
-  const targetG = green(fillColor);
-  const targetB = blue(fillColor);
-  const targetA = 255;
-
-  // 获取点击位置的颜色（考虑像素密度）
-  const startPos = (startY * d * pg.width * d + startX * d) * 4;
-  const startR = pg.pixels[startPos];
-  const startG = pg.pixels[startPos + 1];
-  const startB = pg.pixels[startPos + 2];
-  const startA = pg.pixels[startPos + 3];
-
-  if (startR === targetR && startG === targetG && startB === targetB && startA === targetA) {
-    return;
-  }
-
-  const stack = [[startX, startY]];
-  
-  while (stack.length > 0) {
-    const [x, y] = stack.pop();
-    
-    // 检查四个方向
-    const neighbors = [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]];
-
-    for (const [nx, ny] of neighbors) {
-      if (nx >= 0 && nx < pg.width && ny >= 0 && ny < pg.height) {
-        // 计算像素数组中的位置（处理像素密度 d）
-        for (let i = 0; i < d; i++) {
-          for (let j = 0; j < d; j++) {
-            let index = 4 * ((ny * d + j) * pg.width * d + (nx * d + i));
-            if (pg.pixels[index] === startR && 
-                pg.pixels[index+1] === startG && 
-                pg.pixels[index+2] === startB && 
-                pg.pixels[index+3] === startA) {
-              
-              pg.pixels[index] = targetR;
-              pg.pixels[index+1] = targetG;
-              pg.pixels[index+2] = targetB;
-              pg.pixels[index+3] = targetA;
-              
-              // 每一组像素块只需入栈一次
-              if (i === 0 && j === 0) stack.push([nx, ny]);
-            }
-          }
-        }
-      }
-    }
-  }
-  pg.updatePixels();
-}
-
-function matchColor(pos, r, g, b, a) {
-  return pg.pixels[pos] === r && 
-         pg.pixels[pos+1] === g && 
-         pg.pixels[pos+2] === b && 
-         pg.pixels[pos+3] === a;
-}

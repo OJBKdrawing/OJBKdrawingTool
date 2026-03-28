@@ -87,11 +87,11 @@
     </style>
 </head>
 <body>
-    <h1>Community Gallery</h1>
-    <div id="admin-info">ADMIN MODE ACTIVE</div>
-    <a href="index.html" class="back-link">← Back to Drawing Board</a>
+    <h1>社区画廊 / Community Gallery</h1>
+    <div id="admin-info">管理员模式已激活 / ADMIN MODE ACTIVE</div>
+    <a href="index.html" class="back-link">← 返回画板 / Back to Drawing Board</a>
 
-    <div id="loading">Loading artworks...</div>
+    <div id="loading">正在加载作品... / Loading artworks...</div>
     <div id="error-log"></div>
     <div id="gallery" class="gallery-container"></div>
 
@@ -132,7 +132,7 @@
                 loadingElement.style.display = 'none';
                 
                 if (querySnapshot.empty) {
-                    loadingElement.innerText = "No drawings found. Be the first to share!";
+                    loadingElement.innerText = "暂无作品。快去分享第一幅吧！\nNo drawings found. Be the first to share!";
                     loadingElement.style.display = 'block';
                     return;
                 }
@@ -140,7 +140,7 @@
                 querySnapshot.forEach((docSnap) => {
                     const data = docSnap.data();
                     const docId = docSnap.id;
-                    const date = data.createdAt ? data.createdAt.toDate().toLocaleString() : "Recently shared";
+                    const date = data.createdAt ? data.createdAt.toDate().toLocaleString() : "最近分享 / Recently shared";
                     
                     if (!isAdmin && data.status && data.status !== 'active') return;
 
@@ -149,26 +149,26 @@
                     card.innerHTML = `
                         <img src="${data.imageData}" alt="Drawing">
                         <div class="drawing-info">
-                            <span>${date}</span>
-                            <button class="delete-btn" onclick="window.deleteDrawing('${docId}')">Delete</button>
+                            <span>分享于 / Shared on: ${date}</span>
+                            <button class="delete-btn" onclick="window.deleteDrawing('${docId}')">删除 / Delete</button>
                         </div>
                     `;
                     galleryElement.appendChild(card);
                 });
             } catch (error) {
                 console.error("Gallery Error:", error);
-                loadingElement.innerText = "Failed to load.";
-                errorElement.innerText = "Error: " + error.message;
+                loadingElement.innerText = "加载失败。 / Failed to load.";
+                errorElement.innerText = "错误详情 / Error: " + error.message;
                 errorElement.style.display = 'block';
             }
         }
 
         window.deleteDrawing = async (docId) => {
-            if (confirm("ADMIN: Permanent delete?")) {
+            if (confirm("管理员操作：永久删除此画作？\nADMIN: Permanent delete?")) {
                 try {
                     await deleteDoc(doc(db, "drawings", docId));
                     location.reload();
-                } catch (e) { alert("Delete failed: " + e.message); }
+                } catch (e) { alert("删除失败 / Delete failed: " + e.message); }
             }
         };
 

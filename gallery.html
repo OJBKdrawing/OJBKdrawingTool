@@ -149,7 +149,8 @@
                 // 增加延迟确保 Firebase 已经完全加载
                 await new Promise(resolve => setTimeout(resolve, 500));
                 
-                const q = query(collection(db, "drawings"), orderBy("createdAt", "desc"));
+                // 彻底移除 orderBy，使用最原始的全量查询
+                const q = query(collection(db, "drawings"));
                 const querySnapshot = await getDocs(q);
                 
                 console.log("Gallery query snapshot size:", querySnapshot.size);
@@ -162,12 +163,19 @@
                     return;
                 }
 
-                querySnapshot.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    const docId = docSnap.id;
+                // 在客户端手动进行倒序排列
+                const docs = [];
+                querySnapshot.forEach(d => docs.push({id: d.id, ...d.data()}));
+                docs.sort((a, b) => {
+                    const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
+                    const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
+                    return timeB - timeA;
+                });
+
+                docs.forEach((data) => {
+                    const docId = data.id;
                     const date = data.createdAt ? data.createdAt.toDate().toLocaleString() : "最近分享 / Recently shared";
                     
-                    // 彻底移除所有过滤逻辑，无论 status 是什么都显示
                     const card = document.createElement('div');
                     card.className = 'drawing-card';
                     card.innerHTML = `

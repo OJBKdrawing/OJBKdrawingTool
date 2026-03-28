@@ -167,9 +167,7 @@
                     const docId = docSnap.id;
                     const date = data.createdAt ? data.createdAt.toDate().toLocaleString() : "最近分享 / Recently shared";
                     
-                    // 更加鲁棒的过滤逻辑：如果 status 字段不存在，默认视为 active
-                    if (!isAdmin && data.status && data.status !== 'active') return;
-
+                    // 彻底移除所有过滤逻辑，无论 status 是什么都显示
                     const card = document.createElement('div');
                     card.className = 'drawing-card';
                     card.innerHTML = `

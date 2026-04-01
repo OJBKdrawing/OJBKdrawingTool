@@ -217,7 +217,7 @@ async function uploadToGallery() {
             .from('drawings')
             .insert([
                 { 
-                    imageData: dataUrl, 
+                    image_data: dataUrl, 
                     status: 'active' 
                 }
             ]);

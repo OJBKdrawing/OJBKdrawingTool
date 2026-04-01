@@ -52,7 +52,7 @@
             flex-direction: column;
             align-items: center;
             position: relative;
-            overflow: hidden; /* 防止内容溢出 */
+            overflow: hidden;
         }
         .drawing-card img {
             width: 100%;
@@ -112,24 +112,15 @@
     <div id="error-log"></div>
     <div id="gallery" class="gallery-container"></div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-        import { getFirestore, collection, query, orderBy, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+    <!-- MemFire (Supabase) SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAXoCirYLEY-hR-5NGzwFGas7FYN_6g4e8",
-            authDomain: "ojbkdrawingtool.firebaseapp.com",
-            projectId: "ojbkdrawingtool",
-            storageBucket: "ojbkdrawingtool.firebasestorage.app",
-            messagingSenderId: "629287348964",
-            appId: "1:629287348964:web:97e9c481c0b26a0eecdaf1",
-            measurementId: "G-XR62TPE8EK"
-        };
+    <script>
+        const supabaseUrl = 'https://d76c9d0g91hubrqsibvg.baseapi.memfiredb.com';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImV4cCI6MzM1MTgyNzM4MCwiaWF0IjoxNzc1MDI3MzgwLCJpc3MiOiJzdXBhYmFzZSJ9.DhR_EqtnmjkOjSRwGdaZP6bRcLcoM0ZaUd6Y3S2LR5Y';
+        const supabase = supabasejs.createClient(supabaseUrl, supabaseKey);
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // 管理员模式
+        // 管理员模式检查
         const urlParams = new URLSearchParams(window.location.search);
         const isAdmin = urlParams.get('admin') === '1234'; 
         if (isAdmin) {
@@ -142,55 +133,44 @@
             const loadingElement = document.getElementById('loading');
             const errorElement = document.getElementById('error-log');
             
-            console.log("Starting gallery load...");
-            
             try {
-                // 如果是在手机上，可能因为网络较慢或内存限制
-                // 增加延迟确保 Firebase 已经完全加载
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                // 彻底移除 orderBy，使用最原始的全量查询
-                const q = query(collection(db, "drawings"));
-                const querySnapshot = await getDocs(q);
-                
-                console.log("Gallery query snapshot size:", querySnapshot.size);
+                // 从 MemFire 读取数据，按时间倒序
+                const { data, error } = await supabase
+                    .from('drawings')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
                 
                 loadingElement.style.display = 'none';
                 
-                if (querySnapshot.empty) {
+                if (!data || data.length === 0) {
                     loadingElement.innerText = "暂无作品。快去分享第一幅吧！\nNo drawings found. Be the first to share!";
                     loadingElement.style.display = 'block';
                     return;
                 }
 
-                // 在客户端手动进行倒序排列
-                const docs = [];
-                querySnapshot.forEach(d => docs.push({id: d.id, ...d.data()}));
-                docs.sort((a, b) => {
-                    const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
-                    const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
-                    return timeB - timeA;
-                });
+                data.forEach((item) => {
+                    // 客户端过滤状态
+                    if (!isAdmin && item.status && item.status !== 'active') return;
 
-                docs.forEach((data) => {
-                    const docId = data.id;
-                    const date = data.createdAt ? data.createdAt.toDate().toLocaleString() : "最近分享 / Recently shared";
+                    const date = item.created_at ? new Date(item.created_at).toLocaleString() : "最近分享 / Recently shared";
                     
                     const card = document.createElement('div');
                     card.className = 'drawing-card';
                     card.innerHTML = `
-                        <img src="${data.imageData}" alt="Drawing">
+                        <img src="${item.imageData}" alt="Drawing">
                         <div class="drawing-info">
                             <span>分享于 / Shared on: ${date}</span>
-                            <button class="delete-btn" onclick="window.deleteDrawing('${docId}')">删除 / Delete</button>
+                            <button class="delete-btn" onclick="window.deleteDrawing('${item.id}')">删除 / Delete</button>
                         </div>
                     `;
                     galleryElement.appendChild(card);
                 });
             } catch (error) {
-                console.error("Detailed Gallery Error:", error);
+                console.error("Gallery Error:", error);
                 loadingElement.innerText = "加载失败。 / Failed to load.";
-                errorElement.innerText = "错误详情 / Error: " + error.message + "\n(请确认是否已在 Firebase 控制台开启测试模式)";
+                errorElement.innerText = "错误详情 / Error: " + error.message;
                 errorElement.style.display = 'block';
             }
         }
@@ -198,7 +178,12 @@
         window.deleteDrawing = async (docId) => {
             if (confirm("管理员操作：永久删除此画作？\nADMIN: Permanent delete?")) {
                 try {
-                    await deleteDoc(doc(db, "drawings", docId));
+                    const { error } = await supabase
+                        .from('drawings')
+                        .delete()
+                        .eq('id', docId);
+                    
+                    if (error) throw error;
                     location.reload();
                 } catch (e) { alert("删除失败 / Delete failed: " + e.message); }
             }

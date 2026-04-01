@@ -179,7 +179,7 @@ function instructionText() {
   }
 }
 
-// --- Firebase 上传逻辑 (Firestore Base64 方式) ---
+// --- MemFire Cloud (Supabase) 上传逻辑 ---
 async function uploadToGallery() {
     const shareBtn = document.getElementById('shareButton');
     const originalText = "分享到画廊 / Share to Gallery";
@@ -190,23 +190,27 @@ async function uploadToGallery() {
         // 1. 将 pg 内容转换为 Base64 字符串
         const dataUrl = pg.canvas.toDataURL('image/png');
         
-        // 2. 检查大小 (1MB = 1,048,576 bytes)
+        // 2. 检查大小 (由于数据库限制不同，这里依然保持 1MB 检查)
         if (dataUrl.length > 1048576) {
-            alert("画作太复杂，无法免费分享！请尝试擦除部分内容。\nDrawing is too complex to share for free!");
+            alert("画作太复杂，无法分享！请尝试擦除部分内容。\nDrawing is too complex to share!");
             shareBtn.innerText = originalText;
             shareBtn.disabled = false;
             return;
         }
 
-        // 3. 直接保存 Base64 字符串到 Firestore
-        await window.firebaseRefs.addDoc(window.firebaseRefs.collection(window.firebaseDB, "drawings"), {
-            imageData: dataUrl, 
-            createdAt: window.firebaseRefs.serverTimestamp(),
-            reportCount: 0,      
-            status: 'active'    
-        });
+        // 3. 直接保存到 MemFire (Supabase) 的 drawings 表
+        const { data, error } = await window.supabase
+            .from('drawings')
+            .insert([
+                { 
+                    imageData: dataUrl, 
+                    status: 'active' 
+                }
+            ]);
+
+        if (error) throw error;
         
-        alert("分享成功！(已存入数据库)\nShared to Gallery successfully!");
+        alert("分享成功！(已存入国产云数据库)\nShared to Gallery successfully!");
         shareBtn.innerText = originalText;
         shareBtn.disabled = false;
     } catch (error) {

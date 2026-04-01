@@ -10,6 +10,9 @@
 
     <!-- p5.js 库 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    
+    <!-- MemFire (Supabase) SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
 
   <body>
@@ -22,35 +25,18 @@
     <!-- 画布区域 -->
     <main id="main"></main>
 
-    <!-- Firebase SDK (模块化 CDN 方式) -->
-    <script type="module">
-      // 引入 Firebase 必要的函数
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-      import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-storage.js";
-      import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+    <script>
+      // MemFire 配置信息
+      const supabaseUrl = 'https://d76c9d0g91hubrqsibvg.baseapi.memfiredb.com';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImV4cCI6MzM1MTgyNzM4MCwiaWF0IjoxNzc1MDI3MzgwLCJpc3MiOiJzdXBhYmFzZSJ9.DhR_EqtnmjkOjSRwGdaZP6bRcLcoM0ZaUd6Y3S2LR5Y';
+      
+      // 初始化 Supabase 客户端
+      const supabase = supabasejs.createClient(supabaseUrl, supabaseKey);
 
-      // 你的 Firebase 配置信息
-      const firebaseConfig = {
-        apiKey: "AIzaSyAXoCirYLEY-hR-5NGzwFGas7FYN_6g4e8",
-        authDomain: "ojbkdrawingtool.firebaseapp.com",
-        projectId: "ojbkdrawingtool",
-        storageBucket: "ojbkdrawingtool.firebasestorage.app",
-        messagingSenderId: "629287348964",
-        appId: "1:629287348964:web:97e9c481c0b26a0eecdaf1",
-        measurementId: "G-XR62TPE8EK"
-      };
+      // 将对象暴露给全局，以便 sketch.js 访问
+      window.supabase = supabase;
 
-      // 初始化 Firebase
-      const app = initializeApp(firebaseConfig);
-      const storage = getStorage(app);
-      const db = getFirestore(app);
-
-      // 将这些对象暴露给全局，以便 sketch.js 能够访问
-      window.firebaseStorage = storage;
-      window.firebaseDB = db;
-      window.firebaseRefs = { ref, uploadString, getDownloadURL, collection, addDoc, serverTimestamp };
-
-      console.log("Firebase initialized successfully!");
+      console.log("MemFire Cloud initialized successfully!");
     </script>
 
     <!-- 我们的画板脚本 -->

@@ -224,7 +224,7 @@ async function uploadToGallery() {
 
         if (error) throw error;
         
-        alert("分享成功！(已存入国产云数据库)\nShared to Gallery successfully!");
+        alert("分享成功！\nShared to Gallery successfully!");
         shareBtn.innerText = originalText;
         shareBtn.disabled = false;
     } catch (error) {

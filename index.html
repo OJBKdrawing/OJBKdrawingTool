@@ -20,15 +20,15 @@
     <!-- 我们的画板脚本 -->
     <script src="sketch.js"></script></head>
   <body>
-    <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
-        <div style="margin: 10px 0;">
-            <button id="shareButton" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px;">分享到画廊 / Share to Gallery</button>
-            <a href="gallery.html" style="margin-left: 10px; text-decoration: none; color: #007bff; font-weight: bold;">查看画廊 / View Gallery</a>
+    <div class="container">
+        <div class="top-controls">
+            <button id="shareButton">分享到画廊 / Share to Gallery</button>
+            <a href="gallery.html" class="gallery-link">查看画廊 / View Gallery</a>
         </div>
         <main id="main"></main>
     </div>
 
-    <footer style="margin-top: 20px; text-align: center; color: #66666677; font-size: 14px; line-height: 1.2; width: 100%;">
+    <footer class="watermark">
         <p style="margin: 5px 0;">生命在于涂鸦</p>
         <p style="margin: 5px 0;">感谢支持 ykh 的独立项目，更多咨询请在小红书搜索账号：普通艺术人</p>
     </footer>

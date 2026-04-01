@@ -53,3 +53,70 @@ button:hover, #galleryLink:hover {
 #shareButton:hover {
   background-color: #0056b3;
 }
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.top-controls {
+  margin: 10px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.gallery-link {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #333;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.watermark {
+  margin-top: 20px;
+  text-align: center;
+  color: #66666677;
+  font-size: 14px;
+  line-height: 1.2;
+  width: 100%;
+}
+
+.watermark p {
+  margin: 3px 0; /* 更紧凑的行间距 */
+}
+
+/* 手机端适配 */
+@media screen and (max-width: 600px) {
+  .top-controls {
+    gap: 5px;
+    padding: 0 5px;
+    box-sizing: border-box;
+  }
+  
+  #shareButton, .gallery-link {
+    padding: 8px 12px;
+    font-size: 13px; /* 减小字号以适应单行 */
+    white-space: nowrap; /* 禁止换行 */
+    flex: 1; /* 平分空间 */
+    text-align: center;
+  }
+  
+  .watermark {
+    margin-top: 10px;
+    font-size: 11px; /* 手机端水印更小一点 */
+  }
+  
+  .watermark p {
+    margin: 1px 0; /* 极其紧凑 */
+  }
+}

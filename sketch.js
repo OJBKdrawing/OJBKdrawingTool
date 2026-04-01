@@ -183,6 +183,20 @@ function instructionText() {
 async function uploadToGallery() {
     const shareBtn = document.getElementById('shareButton');
     const originalText = "分享到画廊 / Share to Gallery";
+
+    // 检查数据库客户端是否准备好
+    if (!window.supabaseClient) {
+        console.error("Database client not found. Attempting to re-init...");
+        if (typeof initSupabase === 'function') {
+            window.supabaseClient = initSupabase();
+        }
+    }
+
+    if (!window.supabaseClient) {
+        alert("数据库连接失败，请检查网络并刷新页面。\nDatabase connection failed. Please check network and refresh.");
+        return;
+    }
+
     shareBtn.innerText = "上传中... / Uploading...";
     shareBtn.disabled = true;
 

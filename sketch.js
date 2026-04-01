@@ -199,7 +199,7 @@ async function uploadToGallery() {
         }
 
         // 3. 直接保存到 MemFire (Supabase) 的 drawings 表
-        const { data, error } = await window.supabase
+        const { data, error } = await window.supabaseClient
             .from('drawings')
             .insert([
                 { 

@@ -112,14 +112,13 @@
     <div id="error-log"></div>
     <div id="gallery" class="gallery-container"></div>
 
-    <!-- MemFire (Supabase) SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- MemFire (Supabase) SDK - V1 for compatibility -->
+    <script src="https://cdn.jsdelivr.net/npm/supabase-js@1"></script>
+
+    <!-- 我们的 Supabase 客户端配置 -->
+    <script src="supabase-client.js"></script>
 
     <script>
-        const supabaseUrl = 'https://d76c9d0g91hubrqsibvg.baseapi.memfiredb.com';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImV4cCI6MzM1MTgyNzM4MCwiaWF0IjoxNzc1MDI3MzgwLCJpc3MiOiJzdXBhYmFzZSJ9.DhR_EqtnmjkOjSRwGdaZP6bRcLcoM0ZaUd6Y3S2LR5Y';
-        const supabase = supabasejs.createClient(supabaseUrl, supabaseKey);
-
         // 管理员模式检查
         const urlParams = new URLSearchParams(window.location.search);
         const isAdmin = urlParams.get('admin') === '1234'; 
@@ -135,7 +134,7 @@
             
             try {
                 // 从 MemFire 读取数据，按时间倒序
-                const { data, error } = await supabase
+                const { data, error } = await window.supabaseClient
                     .from('drawings')
                     .select('*')
                     .order('created_at', { ascending: false });
@@ -178,7 +177,7 @@
         window.deleteDrawing = async (docId) => {
             if (confirm("管理员操作：永久删除此画作？\nADMIN: Permanent delete?")) {
                 try {
-                    const { error } = await supabase
+                    const { error } = await window.supabaseClient
                         .from('drawings')
                         .delete()
                         .eq('id', docId);

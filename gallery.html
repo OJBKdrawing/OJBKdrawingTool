@@ -81,6 +81,48 @@
             display: none;
         }
         .admin-mode .delete-btn { display: inline-block; }
+        
+        /* 点赞功能样式 */
+        .like-container {
+            position: absolute;
+            right: 15px;
+            bottom: 60px; /* 位于图片右下角 */
+            background: rgba(255, 255, 255, 0.85);
+            padding: 5px 10px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0; /* 平时隐藏 */
+            transform: translateY(10px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            user-select: none;
+            z-index: 10;
+        }
+        
+        .drawing-card:hover .like-container {
+            opacity: 1; /* 鼠标滑过时显示 */
+            transform: translateY(0);
+        }
+        
+        .like-icon {
+            font-size: 18px;
+            color: #ff4757;
+            transition: transform 0.2s;
+        }
+        
+        .like-container:active .like-icon {
+            transform: scale(1.3);
+        }
+        
+        .like-count {
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+        }
+
         #loading {
             margin-top: 50px;
             font-size: 18px;
@@ -101,6 +143,33 @@
             margin-bottom: 10px;
             font-size: 12px;
         }
+        .watermark {
+            margin-top: 40px;
+            text-align: center;
+            color: #666;
+            opacity: 0.5;
+            font-size: 14px;
+            line-height: 1.2;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .watermark p {
+            margin: 3px 0;
+            width: 100%;
+        }
+        @media (max-width: 600px) {
+            .watermark {
+                margin-top: 20px;
+                font-size: 11px;
+                opacity: 0.4;
+            }
+            .watermark p {
+                margin: 1px 0;
+                text-align: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -112,8 +181,8 @@
     <div id="error-log"></div>
     <div id="gallery" class="gallery-container"></div>
 
-    <!-- MemFire (Supabase) SDK - V1 UMD version for browser compatibility -->
-    <script src="https://unpkg.com/@supabase/supabase-js@1.35.7/dist/umd/supabase.js"></script>
+    <!-- 使用更稳定的 jsDelivr CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.js"></script>
 
     <!-- 我们的 Supabase 客户端配置 -->
     <script src="supabase-client.js"></script>
@@ -154,11 +223,16 @@
                     if (!isAdmin && item.status && item.status !== 'active') return;
 
                     const date = item.created_at ? new Date(item.created_at).toLocaleString() : "最近分享 / Recently shared";
+                    const likes = item.likes || 0; // 获取点赞数
                     
                     const card = document.createElement('div');
                     card.className = 'drawing-card';
                     card.innerHTML = `
                         <img src="${item.image_data}" alt="Drawing">
+                        <div class="like-container" onclick="window.likeDrawing('${item.id}', this)">
+                            <span class="like-icon">❤</span>
+                            <span class="like-count">${likes}</span>
+                        </div>
                         <div class="drawing-info">
                             <span>分享于 / Shared on: ${date}</span>
                             <button class="delete-btn" onclick="window.deleteDrawing('${item.id}')">删除 / Delete</button>
@@ -173,6 +247,36 @@
                 errorElement.style.display = 'block';
             }
         }
+
+        // 点赞逻辑实现
+        window.likeDrawing = async (docId, btnElement) => {
+            const countElement = btnElement.querySelector('.like-count');
+            let currentLikes = parseInt(countElement.innerText);
+            
+            // 立即给用户视觉反馈 (前端先 +1)
+            countElement.innerText = currentLikes + 1;
+            
+            try {
+                // 调用数据库接口进行原子级 +1 操作
+                // 注意：V1 SDK 不支持 .increment()，我们需要先查再更，或者通过 RPC 调用
+                // 这里我们使用 RPC (存储过程) 这种最快、最安全的方法，或者直接用简单 update
+                const { data, error } = await window.supabaseClient.rpc('increment_likes', { row_id: docId });
+                
+                if (error) {
+                    // 如果 RPC 失败，退而求其次使用常规 update
+                    const { error: updateError } = await window.supabaseClient
+                        .from('drawings')
+                        .update({ likes: currentLikes + 1 })
+                        .eq('id', docId);
+                    
+                    if (updateError) throw updateError;
+                }
+            } catch (err) {
+                console.error("点赞失败:", err);
+                // 失败了就把前端数字改回来
+                countElement.innerText = currentLikes;
+            }
+        };
 
         window.deleteDrawing = async (docId) => {
             if (confirm("管理员操作：永久删除此画作？\nADMIN: Permanent delete?")) {
@@ -191,9 +295,9 @@
         loadGallery();
     </script>
 
-    <footer style="margin-top: 40px; text-align: center; color: #66666683; font-size: 14px; line-height: 1.2; width: 100%;">
-        <p style="margin: 5px 0;">生命在于涂鸦</p>
-        <p style="margin: 5px 0;">感谢支持 ykh 的独立项目，更多咨询请在小红书搜索账号：普通艺术人</p>
+    <footer class="watermark">
+        <p>生命在于涂鸦</p>
+        <p>感谢支持 ykh 的独立项目，更多咨询请在小红书搜索账号：普通艺术人</p>
     </footer>
 </body>
 </html>

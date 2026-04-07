@@ -117,10 +117,19 @@
             transform: scale(1.3);
         }
         
-        .like-count {
-            font-size: 14px;
-            font-weight: bold;
-            color: #333;
+        /* 已点赞状态 */
+        .like-container.liked {
+            background: rgba(255, 71, 87, 0.15);
+            cursor: default;
+        }
+        
+        .like-container.liked .like-icon {
+            color: #ff4757;
+            text-shadow: 0 0 5px rgba(255, 71, 87, 0.3);
+        }
+        
+        .like-container.liked .like-count {
+            color: #ff4757;
         }
 
         #loading {
@@ -201,6 +210,9 @@
             const loadingElement = document.getElementById('loading');
             const errorElement = document.getElementById('error-log');
             
+            // 获取已点赞列表
+            const likedDrawings = JSON.parse(localStorage.getItem('likedDrawings') || '[]');
+            
             try {
                 // 从 MemFire 读取数据，按时间倒序
                 const { data, error } = await window.supabaseClient
@@ -224,13 +236,14 @@
 
                     const date = item.created_at ? new Date(item.created_at).toLocaleString() : "最近分享 / Recently shared";
                     const likes = item.likes || 0; // 获取点赞数
+                    const isLiked = likedDrawings.includes(item.id.toString());
                     
                     const card = document.createElement('div');
                     card.className = 'drawing-card';
                     card.innerHTML = `
                         <img src="${item.image_data}" alt="Drawing">
-                        <div class="like-container" onclick="window.likeDrawing('${item.id}', this)">
-                            <span class="like-icon">❤</span>
+                        <div class="like-container ${isLiked ? 'liked' : ''}" onclick="window.likeDrawing('${item.id}', this)">
+                            <span class="like-icon">${isLiked ? '❤' : '❤'}</span>
                             <span class="like-count">${likes}</span>
                         </div>
                         <div class="drawing-info">
@@ -250,16 +263,25 @@
 
         // 点赞逻辑实现
         window.likeDrawing = async (docId, btnElement) => {
+            // 如果已经点过赞了，直接返回
+            if (btnElement.classList.contains('liked')) return;
+
             const countElement = btnElement.querySelector('.like-count');
             let currentLikes = parseInt(countElement.innerText);
             
             // 立即给用户视觉反馈 (前端先 +1)
             countElement.innerText = currentLikes + 1;
+            btnElement.classList.add('liked'); // 立即添加已点赞样式
             
             try {
+                // 将该画作 ID 存入 localStorage 的已点赞列表
+                const likedDrawings = JSON.parse(localStorage.getItem('likedDrawings') || '[]');
+                if (!likedDrawings.includes(docId.toString())) {
+                    likedDrawings.push(docId.toString());
+                    localStorage.setItem('likedDrawings', JSON.stringify(likedDrawings));
+                }
+
                 // 调用数据库接口进行原子级 +1 操作
-                // 注意：V1 SDK 不支持 .increment()，我们需要先查再更，或者通过 RPC 调用
-                // 这里我们使用 RPC (存储过程) 这种最快、最安全的方法，或者直接用简单 update
                 const { data, error } = await window.supabaseClient.rpc('increment_likes', { row_id: docId });
                 
                 if (error) {
@@ -273,8 +295,17 @@
                 }
             } catch (err) {
                 console.error("点赞失败:", err);
-                // 失败了就把前端数字改回来
+                // 失败了就把前端状态改回来
                 countElement.innerText = currentLikes;
+                btnElement.classList.remove('liked');
+                
+                // 从 localStorage 中移除
+                const likedDrawings = JSON.parse(localStorage.getItem('likedDrawings') || '[]');
+                const index = likedDrawings.indexOf(docId.toString());
+                if (index > -1) {
+                    likedDrawings.splice(index, 1);
+                    localStorage.setItem('likedDrawings', JSON.stringify(likedDrawings));
+                }
             }
         };
 

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>下载客户端 / Download Client</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .download-container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            margin-top: 40px;
+        }
+        h1 { color: #333; margin-bottom: 30px; }
+        .download-option {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            transition: transform 0.2s;
+        }
+        .download-option:hover {
+            transform: translateY(-2px);
+            border-color: #007bff;
+        }
+        .os-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #444;
+        }
+        .download-btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .download-btn:hover {
+            background-color: #0056b3;
+        }
+        .back-link {
+            margin-top: 30px;
+            text-decoration: none;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .back-link:hover { color: #007bff; }
+        
+        .watermark {
+            margin-top: auto;
+            padding-top: 40px;
+            opacity: 0.5;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="download-container">
+        <div style="text-align: left; margin-bottom: 20px;">
+            <a href="index.html" class="back-link">← 返回首页 / Back to Home</a>
+        </div>
+        <h1>获取桌面客户端 / Get Desktop Client</h1>
+        
+        <div class="download-option">
+            <div class="os-title">macOS 版本</div>
+            <p>适用于 Apple Silicon (M1/M2/M3) 及 Intel 芯片</p>
+            <a href="https://pan.baidu.com/s/1rqxt_PEAMdrOBbixtuGAfQ" class="download-btn" target="_blank">跳转到百度网盘下载 (提取码: ojbk)</a>
+            <p style="font-size: 0.8rem; color: #888; margin-top: 10px;">提取码 / Password: <strong>ojbk</strong></p>
+        </div>
+
+        <div class="download-option">
+            <div class="os-title">Windows 版本</div>
+            <p>适用于 Windows 10/11 64位系统</p>
+            <a href="https://pan.baidu.com/s/1MXFPrrs2Ib-EiNG_TQ7JuQ?pwd=ojbk" class="download-btn" target="_blank">跳转到百度网盘下载 (提取码: ojbk)</a>
+            <p style="font-size: 0.8rem; color: #888; margin-top: 10px;">提取码 / Password: <strong>ojbk</strong></p>
+        </div>
+    </div>
+
+    <footer class="watermark">
+        <p>生命在于涂鸦</p>
+        <p>感谢支持 ykh 的独立项目，更多咨询请在小红书搜索账号：普通艺术人</p>
+    </footer>
+</body>
+</html>

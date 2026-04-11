@@ -11,8 +11,8 @@
     <!-- p5.js 库 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     
-    <!-- MemFire (Supabase) SDK - V1 UMD version for browser compatibility -->
-    <script src="https://unpkg.com/@supabase/supabase-js@1.35.7/dist/umd/supabase.js"></script>
+    <!-- 使用更稳定的 jsDelivr CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.js"></script>
 
     <!-- 我们的 Supabase 客户端配置 -->
     <script src="supabase-client.js"></script>
@@ -24,6 +24,7 @@
         <div class="top-controls">
             <button id="shareButton">分享到画廊 / Share to Gallery</button>
             <a href="gallery.html" class="gallery-link">查看画廊 / View Gallery</a>
+            <a href="download.html" class="gallery-link" style="background-color: #28a745;">下载 / Download</a>
         </div>
         <main id="main"></main>
     </div>

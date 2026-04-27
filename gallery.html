@@ -111,8 +111,7 @@
 
         @media (hover: none) and (pointer: coarse) {
             .like-container {
-                opacity: 1; /* 触屏设备不使用“第一次点击触发悬停”的交互 */
-                transform: translateY(0);
+                display: none; /* 手机端不显示角标点赞，避免“第一次点只显示角标” */
             }
         }
         

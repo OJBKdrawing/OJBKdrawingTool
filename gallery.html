@@ -355,8 +355,9 @@
                     
                     const card = document.createElement('div');
                     card.className = 'drawing-card';
+                    card.id = `card-${item.id}`; // 为卡片添加唯一 ID 方便后续查找
                     card.innerHTML = `
-                        <img src="${item.image_data}" alt="Drawing" onclick="window.openLightbox('${item.id}', '${item.image_data}', ${likes}, ${isLiked})">
+                        <img src="${item.image_data}" alt="Drawing" onclick="window.openLightbox('${item.id}', '${item.image_data}')">
                         <div class="like-container ${isLiked ? 'liked' : ''}" onclick="window.likeDrawing('${item.id}', this)">
                             <span class="like-icon">${isLiked ? '❤' : '❤'}</span>
                             <span class="like-count">${likes}</span>
@@ -441,20 +442,28 @@
         // --- 大图弹窗逻辑 ---
         let currentLightboxId = null;
 
-        window.openLightbox = (id, imgSrc, likes, isLiked) => {
+        window.openLightbox = (id, imgSrc) => {
             currentLightboxId = id;
             const lightbox = document.getElementById('lightbox');
             const lightboxImg = document.getElementById('lightbox-img');
-            const likeBtn = document.getElementById('lightbox-like-btn');
-            const likeCount = document.getElementById('lightbox-like-count');
+            const lightboxLikeBtn = document.getElementById('lightbox-like-btn');
+            const lightboxLikeCount = document.getElementById('lightbox-like-count');
 
-            lightboxImg.src = imgSrc;
-            likeCount.innerText = likes;
-            
-            if (isLiked) {
-                likeBtn.classList.add('liked');
-            } else {
-                likeBtn.classList.remove('liked');
+            // 实时从对应的列表卡片中获取最新的数据
+            const card = document.getElementById(`card-${id}`);
+            if (card) {
+                const likeContainer = card.querySelector('.like-container');
+                const likeCountText = likeContainer.querySelector('.like-count').innerText;
+                const isLiked = likeContainer.classList.contains('liked');
+
+                lightboxImg.src = imgSrc;
+                lightboxLikeCount.innerText = likeCountText;
+                
+                if (isLiked) {
+                    lightboxLikeBtn.classList.add('liked');
+                } else {
+                    lightboxLikeBtn.classList.remove('liked');
+                }
             }
 
             lightbox.style.display = 'flex';
@@ -469,23 +478,18 @@
         window.handleLightboxLike = async () => {
             if (!currentLightboxId) return;
             
-            // 找到列表里对应的那个点赞按钮，模拟点击它
-            const cards = document.querySelectorAll('.drawing-card');
-            for (let card of cards) {
-                const img = card.querySelector('img');
-                // 简单的匹配逻辑：通过图片源码匹配（虽然有更优雅的方法，但这样改动最小）
-                if (img && img.onclick && img.onclick.toString().includes(currentLightboxId)) {
-                    const likeContainer = card.querySelector('.like-container');
-                    if (likeContainer && !likeContainer.classList.contains('liked')) {
-                        // 触发点赞
-                        await window.likeDrawing(currentLightboxId, likeContainer);
-                        
-                        // 同步弹窗内的视觉状态
-                        const newCount = likeContainer.querySelector('.like-count').innerText;
-                        document.getElementById('lightbox-like-count').innerText = newCount;
-                        document.getElementById('lightbox-like-btn').classList.add('liked');
-                    }
-                    break;
+            // 直接通过卡片 ID 找到列表里的点赞容器
+            const card = document.getElementById(`card-${currentLightboxId}`);
+            if (card) {
+                const likeContainer = card.querySelector('.like-container');
+                if (likeContainer && !likeContainer.classList.contains('liked')) {
+                    // 直接复用主列表的点赞逻辑
+                    await window.likeDrawing(currentLightboxId, likeContainer);
+                    
+                    // 强制同步弹窗内的视觉状态
+                    const newCount = likeContainer.querySelector('.like-count').innerText;
+                    document.getElementById('lightbox-like-count').innerText = newCount;
+                    document.getElementById('lightbox-like-btn').classList.add('liked');
                 }
             }
         };

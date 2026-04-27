@@ -102,9 +102,18 @@
             z-index: 10;
         }
         
-        .drawing-card:hover .like-container {
-            opacity: 1; /* 鼠标滑过时显示 */
-            transform: translateY(0);
+        @media (hover: hover) and (pointer: fine) {
+            .drawing-card:hover .like-container {
+                opacity: 1; /* 鼠标滑过时显示 */
+                transform: translateY(0);
+            }
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            .like-container {
+                opacity: 1; /* 触屏设备不使用“第一次点击触发悬停”的交互 */
+                transform: translateY(0);
+            }
         }
         
         .like-icon {
